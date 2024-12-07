@@ -1,0 +1,27 @@
+Parameters:
+  AppName:
+      Description: Application name
+      Type: String
+  JobName:
+    Description: Job name
+    Type: String
+  JobDefinition:
+    Description: Job definition
+    Type: String
+
+
+
+Resources:
+  JobScheduledRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Name: !Sub ${AppName}-job-scheduler-rule
+      Description: Trigger job on last day of month
+      ScheduleExpression: 'cron(0 17 ? * 7 *)'
+      Targets:
+        - Id: JobSchedulerA
+          Arn: !Sub 'arn:aws:batch:${AWS::Region}:${AWS::AccountId}:job-queue/ecs-${AppName}-JobQueue'
+          RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/ecs-${AppName}-event-rule-role'
+          BatchParameters:
+            JobDefinition: !Ref JobDefinition
+            JobName: !Ref JobName

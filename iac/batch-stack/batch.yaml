@@ -1,0 +1,94 @@
+Parameters:
+  AppName:
+    Description: Application name
+    Type: String
+  SubnetId:
+    Description: Subnet ID
+    Type: String
+  SecurityGroupId:
+    Description: Security Group ID
+    Type: String
+
+
+Resources:
+  ServiceLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+     LogGroupName: !Join ['-', [!Ref AppName, 'log-group']]
+     RetentionInDays: 30
+
+
+  BatchComputeEnvironment:
+    Type: AWS::Batch::ComputeEnvironment
+    Properties:
+      Type: MANAGED
+      ServiceRole: !Sub 'arn:aws:iam::${AWS::AccountId}:role/ecs-${AppName}-BatchServiceRole'
+      ComputeEnvironmentName: !Sub 'ecs-${AppName}-ComputeEnvironment'
+      ComputeResources:
+        Type: FARGATE
+        MaxvCpus: 256
+        Subnets:
+          - !Ref SubnetId
+        SecurityGroupIds:
+          - !Ref SecurityGroupId
+      State: ENABLED
+
+
+  BatchJobQueue:
+    Type: AWS::Batch::JobQueue
+    Properties:
+      ComputeEnvironmentOrder:
+        - ComputeEnvironment: !Ref BatchComputeEnvironment
+          Order: 1
+      Priority: 1
+      State: ENABLED
+      JobQueueName: !Sub 'ecs-${AppName}-JobQueue'
+
+
+  BatchJobDefinition:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      Type: Container
+      PlatformCapabilities:
+        - FARGATE
+      ContainerProperties:
+        #Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}:latest'
+        Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/prod-ecs-batch:${AppName}'
+        JobRoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/ecs-${AppName}-ExecutionRole'
+        ExecutionRoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/ecs-${AppName}-ExecutionRole'
+        #Command:
+        #     - "echo"
+        #     - "Hello World"
+        ResourceRequirements:
+          - Type: VCPU
+            Value: 0.25
+          - Type: MEMORY
+            Value: 512
+        NetworkConfiguration:
+          AssignPublicIp: ENABLED
+        FargatePlatformConfiguration:
+          PlatformVersion: LATEST 
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref ServiceLogGroup
+            awslogs-region: !Ref AWS::Region
+      JobDefinitionName: !Sub 'ecs-${AppName}-JobDefinition'
+      RetryStrategy:
+        Attempts: 1
+      Timeout:
+        AttemptDurationSeconds: 600
+
+
+
+Outputs:
+  BatchJobQueue:
+    Description: Batch Job Queue
+    Value: !Ref BatchJobQueue
+    Export:
+      Name: !Sub 'ecs-${AppName}-BatchJobQueue'
+  BatchJobDefinition:
+    Description: Batch Job Definition
+    Value: !Ref BatchJobDefinition
+    Export:
+      Name: !Sub 'ecs-${AppName}-BatchJobDefinition'

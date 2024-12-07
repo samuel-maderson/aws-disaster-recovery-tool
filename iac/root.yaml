@@ -1,0 +1,49 @@
+Parameters:
+  AppName:
+    Description: Application name
+    Type: String
+    Default: aws-disaster-recovery-tool
+  BucketName:
+    Description: Bucket name
+    Type: String
+    Default: iac-templates
+  SubnetId:
+    Description: Subnet ID
+    Type: String
+    Default: subnet-092xxxxxxxxxxxxxxxx
+  SecurityGroupId:
+    Description: Security Group ID
+    Type: String
+    Default: sg-02xxxxxxxxxxxxxxxx
+  KMSKeyId:
+    Description: KMS Key ID
+    Type: String
+    Default: mrk-4c20xxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+
+Resources:
+  IAMResource:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${BucketName}/${AppName}/iam.yaml'
+      Parameters:
+        AppName: !Ref AppName
+        KMSKeyId: !Ref KMSKeyId
+  BatchResource:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${BucketName}/${AppName}/batch.yaml'
+      Parameters:
+        AppName: !Ref AppName
+        SubnetId: !Ref SubnetId
+        SecurityGroupId: !Ref SecurityGroupId
+    DependsOn: IAMResource  
+  EventsResource:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${BucketName}/${AppName}/event.yaml'
+      Parameters:
+        AppName: !Ref AppName
+        JobName: !Ref AppName
+        JobDefinition: !GetAtt BatchResource.Outputs.BatchJobDefinition
