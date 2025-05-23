@@ -1,4 +1,4 @@
-# AWS Disaster Recovery Tool (Go Edition)
+# AWS Disaster Recovery Tool
 
 ## 🚀 Quick Summary
 
@@ -36,6 +36,7 @@ A simple disaster recovery tool for AWS, written in Go, designed to facilitate a
 
 A typical Go project structure might look like this. Adjust based on your actual layout:
 
+```text
 aws-disaster-recovery-tool/
 ├── cmd/
 │   └── recoverytool/          # Main application package
@@ -55,6 +56,7 @@ aws-disaster-recovery-tool/
 ├── go.mod                     # Go modules file
 ├── go.sum                     # Go modules checksum file
 ├── README.
+```
 
 *(Note: This is a suggested structure. Adapt it to your project's actual organization.)*
 
